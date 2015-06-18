@@ -26,16 +26,17 @@ t_end = 1000
 K = 0.1  # diffusion constant (mol/(m^2.s))
 A = 1.1  # contact area (m^2)
 D = 0.001  # Fick's law constant
+kr = 0.01  # reaction constant
 
 liquor_volume = 1.0  # m^3
 wood_volume = 1.0  # m^3
 total_volume = liquor_volume + wood_volume
 
-Ncompartments = 3
+Ncompartments = 10
 dz = 1./Ncompartments
 wood_compartment_volume = wood_volume/Ncompartments
 
-x0 = numpy.concatenate(([0], [0, 1, 0]))
+x0 = numpy.concatenate(([1], [0]*Ncompartments))
 
 def dxdt(x, t):
     # unpack variables
@@ -65,10 +66,13 @@ def dxdt(x, t):
     diffusion = -A*D*gradcw
     diffusion[-1] = 0
 
+    # reaction rate in wood
+    r = -kr*cw
+
     # mass balance:
     dNliquordt = -transfer_rate
-    # in wood, we change due to diffusion
-    dNwooddt = -diffusion + numpy.roll(diffusion, 1)
+    # in wood, we change due to diffusion (left and right) and reaction
+    dNwooddt = r*wood_compartment_volume - diffusion + numpy.roll(diffusion, 1)
     # plus the extra flow from liquor
     dNwooddt[0] += transfer_rate
 
@@ -80,10 +84,11 @@ def totalmass(x):
 t = numpy.linspace(0, t_end)
 
 xs, info = scipy.integrate.odeint(dxdt, x0, t, full_output=True)
+C = xs/([liquor_volume] + [wood_compartment_volume]*Ncompartments)
 
 # Concentrations
 plt.subplot(2, 1, 1)
-plt.plot(t, xs/([wood_volume] + [wood_compartment_volume]*Ncompartments))
+plt.plot(t, C)
 plt.ylabel('Concentrations')
 # Steady state should be
 ss = sum(x0)/total_volume
