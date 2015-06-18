@@ -24,7 +24,9 @@ import matplotlib.pyplot as plt
 #
 # We simulate a reaction
 # 1 A -> 1 B
-# r = kr*Ca
+# r1 = kr1*Ca
+# 1 B -> 1 C
+# r2 = kr2*Cb
 # dNdt = S*r*V
 
 def reaction_rates(C):
@@ -33,8 +35,9 @@ def reaction_rates(C):
     :return: reaction rates
     """
 
-    CA, CB = C
-    return numpy.array([kr*CA])
+    CA, CB, CC = C
+    return numpy.array([kr1*CA,
+                        kr2*CB])
 
 
 def flatx(liquor, wood):
@@ -64,38 +67,39 @@ def concentrations(x):
 
     return cl, cw
 
-components = ['A', 'B']
+components = ['A', 'B', 'C']
 Ncomponents = len(components)
-S = numpy.array([[-1, 1]]).T  # stoicheometric matrix
+ # stoicheometric matrix, reagents negative, products positive
+S = numpy.array([[-1, 1, 0],
+                 [0, -1, 1]]).T
+t_end = 100
 
-t_end = 10
-
-K = 0.1  # diffusion constant (mol/(m^2.s))
+K = numpy.array([0.1, 0.1, 0])  # diffusion constant (mol/(m^2.s))
 A = 1.1  # contact area (m^2)
-D = 0.01  # Fick's law constant
-kr = 0.01 # reaction constant (mol/(s.m^3))
+# FIXME: K and D should be specified in a similar way
+D = numpy.array([[0.01], [0.02], [0.]])  # Fick's law constants
+kr1 = 0.01 # reaction constant (mol/(s.m^3))
+kr2 = 0.02
 
 liquor_volume = 1.0  # m^3
 wood_volume = 1.0  # m^3
 total_volume = liquor_volume + wood_volume
 
-Ncompartments = 3
+Ncompartments = 10
 dz = 1./Ncompartments
 wood_compartment_volume = wood_volume/Ncompartments
 
 
 # Initial conditions
-Nliq0 = numpy.array([1.,   # A
-                     0.])   # B
+Nliq0 = numpy.array([1., 0., 0.])
          
-Nwood0 = numpy.array([[0, 0, 0],
-                      [0, 0, 0]])
-          
+Nwood0 = numpy.zeros((Ncomponents, Ncompartments))
+
 x0 = flatx(Nliq0, Nwood0)
 
 
 def dxdt(x, t):
-    assert numpy.all(x>=0)
+#    assert numpy.all(x>=0)
 
     # unpack variables
     cl, cw = concentrations(x)
