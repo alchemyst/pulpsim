@@ -36,17 +36,36 @@ def reaction_rates(C):
     CA, CB = C
     return numpy.array([kr*CA])
 
+
+def flatx(dNliquordt, dNwooddt):
+    """ Return a "flattened" version of the state variables """
+    return numpy.concatenate((dNliquordt[:, None], dNwooddt), axis=1).flatten()
+
+
+def concentrations(x):
+    """ Return concentrations given number of moles vector
+    """
+    
+    N = x.reshape((Ncomponents, Ncompartments+1))
+    Nl = N[:, 0]  # First column is liquor
+    Nw = N[:, 1:]  # all the rest are wood
+
+    # calculate concentrations
+    cl = Nl/liquor_volume
+    cw = Nw/wood_compartment_volume
+
+    return cl, cw
+
 components = ['A', 'B']
 Ncomponents = len(components)
 S = numpy.array([[-1, 1]]).T  # stoicheometric matrix
 
-
-t_end = 1000
+t_end = 100
 
 K = 0.1  # diffusion constant (mol/(m^2.s))
 A = 1.1  # contact area (m^2)
-D = 0.001  # Fick's law constant
-kr = 0.01  # reaction constant (mol/(s.m^3))
+D = 0.0  # Fick's law constant
+kr = 0.0  # reaction constant (mol/(s.m^3))
 
 liquor_volume = 1.0  # m^3
 wood_volume = 1.0  # m^3
@@ -57,21 +76,14 @@ dz = 1./Ncompartments
 wood_compartment_volume = wood_volume/Ncompartments
 
 
-def flatx(dNliquordt, dNwooddt):
-    return numpy.concatenate((dNliquordt, numpy.asarray(dNwooddt).flatten()))
-
-x0 = flatx([1, 0], [[0, 0, 0], [0, 0, 0]])
-
-def concentrations(x):
-    N = numpy.reshape(Ncomponents, Ncompartments+1)
-    Nl = x[:, 0]  # First column is liquor
-    Nw = x[:, 1:]  # all the rest are wood
-
-    # calculate concentrations
-    cl = Nl/liquor_volume
-    cw = Nw/wood_compartment_volume
-
-    return cl, cw
+# Initial conditions
+Nliq0 = numpy.array([1.,   # A
+                     0.])   # B
+         
+Nwood0 = numpy.array([[1/3, 0, 0],
+                      [0, 0, 0]])
+          
+x0 = flatx(Nliq0, Nwood0)
 
 
 def dxdt(x, t):
@@ -81,7 +93,7 @@ def dxdt(x, t):
     # All transfers are calculated in moles/second
 
     # Diffusion between liquor and first wood compartment
-    transfer_rate = K*A*(cl - cw[0])
+    transfer_rate = K*A*(cl - cw[:, 0])
 
     # Flows for each block are due to diffusion
     #                                       v symmetry boundary
@@ -95,7 +107,7 @@ def dxdt(x, t):
     # FIXME: This calculates gradients for both dimensions
     _, gradcwz = numpy.gradient(cw, dz)
     diffusion = -A*D*gradcwz
-    diffusion[-1] = 0
+    diffusion[:, -1] = 0
 
     # reaction rates in wood
     r = numpy.apply_along_axis(reaction_rates, 0, cw)
@@ -107,7 +119,7 @@ def dxdt(x, t):
     # in wood, we change due to diffusion (left and right) and reaction
     dNwooddt = reaction - diffusion + numpy.roll(diffusion, 1)
     # plus the extra flow from liquor
-    dNwooddt[0] += transfer_rate
+    dNwooddt[:, 0] += transfer_rate
 
     return flatx(dNliquordt, dNwooddt)
 
@@ -115,19 +127,25 @@ def totalmass(x):
     return sum(x)
 
 t = numpy.linspace(0, t_end)
+Nt = len(t)
 
 xs, info = scipy.integrate.odeint(dxdt, x0, t, full_output=True)
-C = xs/([liquor_volume] + [wood_compartment_volume]*Ncompartments)
+
+# Work out concentrations
+# TODO: This is probably inefficient
+cl, cw = map(numpy.array, zip(*map(concentrations, xs)))
 
 # Concentrations
-plt.subplot(2, 1, 1)
-plt.plot(t, C)
-plt.ylabel('Concentrations')
+for i, component in enumerate(components):
+    plt.subplot(Ncomponents + 1, 1, i+1)
+    plt.plot(t, cl[:, i])
+    plt.plot(t, cw[:, i, :])
+    plt.ylabel('[{}]'.format(component))
 # Steady state should be
 ss = sum(x0)/total_volume
 plt.axhline(ss, color='black')
 # Check that we aren't creating or destroying mass
-plt.subplot(2, 1, 2)
+plt.subplot(Ncomponents+1, 1, Ncomponents+1)
 plt.plot(t, [totalmass(x) for x in xs])
 plt.ylabel('Total moles')
 plt.ylim(ymin=0)
