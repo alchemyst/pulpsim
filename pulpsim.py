@@ -18,7 +18,7 @@ import matplotlib.pyplot as plt
 #            0         dz                 1
 # States are number of moles of each reagent in each compartment
 #     x[0]   | x[1]    | x[2] ... x[N-1]
-#     x[Nc]  | x[Nc+1]  |
+#     x[N]  | x[N+1]  |
 #       .    | ..
 #     x[(N-1)*Nc]| x[NNc-1]
 #
@@ -37,18 +37,26 @@ def reaction_rates(C):
     return numpy.array([kr*CA])
 
 
-def flatx(dNliquordt, dNwooddt):
+def flatx(liquor, wood):
     """ Return a "flattened" version of the state variables """
-    return numpy.concatenate((dNliquordt[:, None], dNwooddt), axis=1).flatten()
+    return numpy.concatenate((liquor[:, None], wood), axis=1).flatten()
+
+
+def unflatx(x):
+    """
+    :param x: flattened state variables
+    :return: liquor, wood state variables reshaped
+    """
+    rectangle = x.reshape((Ncomponents, Ncompartments+1))
+    liquor = rectangle[:, 0]  # First column is liquor
+    wood = rectangle[:, 1:]  # all the rest are wood
+    return liquor, wood
 
 
 def concentrations(x):
     """ Return concentrations given number of moles vector
     """
-    
-    N = x.reshape((Ncomponents, Ncompartments+1))
-    Nl = N[:, 0]  # First column is liquor
-    Nw = N[:, 1:]  # all the rest are wood
+    Nl, Nw = unflatx(x)
 
     # calculate concentrations
     cl = Nl/liquor_volume
@@ -60,12 +68,12 @@ components = ['A', 'B']
 Ncomponents = len(components)
 S = numpy.array([[-1, 1]]).T  # stoicheometric matrix
 
-t_end = 100
+t_end = 10
 
 K = 0.1  # diffusion constant (mol/(m^2.s))
 A = 1.1  # contact area (m^2)
-D = 0.0  # Fick's law constant
-kr = 0.0  # reaction constant (mol/(s.m^3))
+D = 0.01  # Fick's law constant
+kr = 0.01 # reaction constant (mol/(s.m^3))
 
 liquor_volume = 1.0  # m^3
 wood_volume = 1.0  # m^3
@@ -80,13 +88,15 @@ wood_compartment_volume = wood_volume/Ncompartments
 Nliq0 = numpy.array([1.,   # A
                      0.])   # B
          
-Nwood0 = numpy.array([[1/3, 0, 0],
+Nwood0 = numpy.array([[0, 0, 0],
                       [0, 0, 0]])
           
 x0 = flatx(Nliq0, Nwood0)
 
 
 def dxdt(x, t):
+    assert numpy.all(x>=0)
+
     # unpack variables
     cl, cw = concentrations(x)
 
@@ -138,12 +148,10 @@ cl, cw = map(numpy.array, zip(*map(concentrations, xs)))
 # Concentrations
 for i, component in enumerate(components):
     plt.subplot(Ncomponents + 1, 1, i+1)
-    plt.plot(t, cl[:, i])
+    plt.plot(t, cl[:, i], linewidth=2)
     plt.plot(t, cw[:, i, :])
     plt.ylabel('[{}]'.format(component))
-# Steady state should be
-ss = sum(x0)/total_volume
-plt.axhline(ss, color='black')
+
 # Check that we aren't creating or destroying mass
 plt.subplot(Ncomponents+1, 1, Ncomponents+1)
 plt.plot(t, [totalmass(x) for x in xs])
