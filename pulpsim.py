@@ -7,7 +7,7 @@ import numpy
 import scipy.integrate
 import matplotlib.pyplot as plt
 
-# Simulate one liquor comportment and N wood compartments
+# Simulate one liquor compartment and N wood compartments
 # +----------+-----------+
 # |          |   |   ... |
 # |  liquor  |   wood    |
@@ -52,14 +52,14 @@ def dxdt(x, t):
     transfer_rate = K*A*(cl - cw[0])
 
     # Flows for each block are due to diffusion
+    #                                       v symmetry boundary
     #       +----+      +----+      +----+ ||
     # from  | 0  | d[0] | 1  | d[1] | 2  | ||
     # liq ->|    |----->|    |----->|    |-||
     #       +----+      +----+      +----+ ||
 
 
-    # diffusion in wood (Fick's law
-    # first order differences
+    # diffusion in wood (Fick's law)
     # The last compartment sees no outgoing diffusion due to symmetry
     gradcw = numpy.gradient(cw, dz)
     diffusion = -A*D*gradcw
