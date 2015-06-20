@@ -85,7 +85,7 @@ liquor_volume = 1.0  # m^3
 wood_volume = 1.0  # m^3
 total_volume = liquor_volume + wood_volume
 
-Ncompartments = 10
+Ncompartments = 30
 dz = 1./Ncompartments
 wood_compartment_volume = wood_volume/Ncompartments
 
@@ -141,6 +141,8 @@ def totalmass(x):
     return sum(x)
 
 t = numpy.linspace(0, t_end)
+z = numpy.linspace(0, 1, Ncompartments)
+zl = numpy.array([-dz*2, 0])  # z-coords of liquor
 Nt = len(t)
 
 xs, info = scipy.integrate.odeint(dxdt, x0, t, full_output=True)
@@ -150,15 +152,19 @@ xs, info = scipy.integrate.odeint(dxdt, x0, t, full_output=True)
 cl, cw = map(numpy.array, zip(*map(concentrations, xs)))
 
 # Concentrations
+ax = None
+cm = plt.get_cmap('cubehelix')
 for i, component in enumerate(components):
-    plt.subplot(Ncomponents + 1, 1, i+1)
-    plt.plot(t, cl[:, i], linewidth=2)
-    plt.plot(t, cw[:, i, :])
+    ax = plt.subplot(Ncomponents + 1, 1, i+1, sharex=ax)
+    plt.setp(ax.get_xticklabels(), visible=False)
+    plt.pcolormesh(t, zl, numpy.atleast_2d(cl[:, i]), cmap=cm)
+    plt.pcolormesh(t, z, cw[:, i, :].T, cmap=cm)
     plt.ylabel('[{}]'.format(component))
 
 # Check that we aren't creating or destroying mass
-plt.subplot(Ncomponents+1, 1, Ncomponents+1)
+plt.subplot(Ncomponents+1, 1, Ncomponents+1, sharex=ax)
 plt.plot(t, [totalmass(x) for x in xs])
 plt.ylabel('Total moles')
 plt.ylim(ymin=0)
+plt.subplots_adjust(hspace=0)
 plt.show()
