@@ -73,6 +73,14 @@ def concentrations(x):
 
     return cl, cw
 
+
+def temp(t):
+    """ Temperature function
+    """
+
+    T = Ti + t * 0.1
+    return T
+
 components = ['A', 'B', 'C']
 Ncomponents = len(components)
  # stoicheometric matrix, reagents negative, products positive
@@ -104,7 +112,8 @@ x0 = flatx(Nliq0, Nwood0)
 
 
 def dxdt(x, t):
-#    assert numpy.all(x>=0)
+    # assert numpy.all(x>=0)
+    T = temp(t)
 
     # unpack variables
     cl, cw = concentrations(x)
