@@ -36,6 +36,12 @@ def reaction_rates(C):
     """
 
     CA, CB, CC = C
+    if numpy.sum(CC) <= 0.1:
+        kr2 = 0.02
+    elif numpy.sum(CC) <= 0.5:
+        kr2 = 0.02
+    else:
+        kr2 = 0.02
     return numpy.array([kr1*CA,
                         kr2*CB])
 
@@ -79,7 +85,6 @@ A = 1.1  # contact area (m^2)
 # FIXME: K and D should be specified in a similar way
 D = numpy.array([[0.01], [0.02], [0.]])  # Fick's law constants
 kr1 = 0.01 # reaction constant (mol/(s.m^3))
-kr2 = 0.02
 
 liquor_volume = 1.0  # m^3
 wood_volume = 1.0  # m^3
