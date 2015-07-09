@@ -29,20 +29,23 @@ import matplotlib.pyplot as plt
 # r2 = kr2*Cb
 # dNdt = S*r*V
 
-def reaction_rates(C, M):
+def reaction_rates(C, x, T):
     """ Calculate reaction rates for a column of component concentrations
     :param C:
     :return: reaction rates
     """
 
     CA, CB, CC = C
+    Nl, Nw = unflatx(x)
+    # Get total moles
+    TM = numpy.zeros(len(Nw[:, 0]))
     # Convert the mol amount to % mass
-    for i, mol in enumerate(M):
-        M[i] = (M[i]*componentsMM[i])/wood_mass
+    for i, mol in enumerate(Nw[:, 0]):
+        TM[i] = (numpy.sum(Nw[i, :])*componentsMM[i])/wood_mass
     
-    if M[2] >= 0.22:
+    if TM[2] >= phase_change_limit[0]:
         kr2 = 0.02
-    elif M[2] >= 0.02:
+    elif TM[2] >= phase_change_limit[1]:
         kr2 = 0.02
     else:
         kr2 = 0.02
@@ -95,6 +98,7 @@ S = numpy.array([[-1, 1, 0],
 t_end = 100
 
 Ti = 273.15  # (Kelvin)
+phase_change_limit = numpy.array([0.5, 0.3])
 K = numpy.array([0.1, 0.1, 0])  # diffusion constant (mol/(m^2.s))
 A = 1.1  # contact area (m^2)
 # FIXME: K and D should be specified in a similar way
@@ -126,11 +130,6 @@ def dxdt(x, t):
     # unpack variables
     cl, cw = concentrations(x)
     
-    # Get the total moles of each component in the volume
-    M = numpy.zeros(len(components))
-    for i, mol in enumerate(cw[:, 0]):
-        M[i] = (numpy.sum(cw[i, :])/len(cw[i, :]))*wood_volume
-    
     # All transfers are calculated in moles/second
 
     # Diffusion between liquor and first wood compartment
@@ -151,7 +150,7 @@ def dxdt(x, t):
     diffusion[:, -1] = 0
 
     # reaction rates in wood
-    r = numpy.apply_along_axis(reaction_rates, 0, cw, M)
+    r = numpy.apply_along_axis(reaction_rates, 0, cw, x, T)
     # change in moles due to reaction
     reaction = S.dot(r)*wood_compartment_volume
 
