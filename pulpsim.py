@@ -29,16 +29,20 @@ import matplotlib.pyplot as plt
 # r2 = kr2*Cb
 # dNdt = S*r*V
 
-def reaction_rates(C):
+def reaction_rates(C, M):
     """ Calculate reaction rates for a column of component concentrations
     :param C:
     :return: reaction rates
     """
 
     CA, CB, CC = C
-    if numpy.sum(CC) <= 0.1:
+    # Convert the mol amount to % mass
+    for i, mol in enumerate(M):
+        M[i] = (M[i]*componentsMM[i])/wood_mass
+    
+    if M[2] >= 0.22:
         kr2 = 0.02
-    elif numpy.sum(CC) <= 0.5:
+    elif M[2] >= 0.02:
         kr2 = 0.02
     else:
         kr2 = 0.02
@@ -82,18 +86,22 @@ def temp(t):
     return T
 
 components = ['A', 'B', 'C']
+# Molar mass
+componentsMM = [1., 1., 1.]
 Ncomponents = len(components)
  # stoicheometric matrix, reagents negative, products positive
 S = numpy.array([[-1, 1, 0],
                  [0, -1, 1]]).T
 t_end = 100
 
+Ti = 273.15  # (Kelvin)
 K = numpy.array([0.1, 0.1, 0])  # diffusion constant (mol/(m^2.s))
 A = 1.1  # contact area (m^2)
 # FIXME: K and D should be specified in a similar way
 D = numpy.array([[0.01], [0.02], [0.]])  # Fick's law constants
 kr1 = 0.01 # reaction constant (mol/(s.m^3))
 
+wood_mass = 1.0  # kg
 liquor_volume = 1.0  # m^3
 wood_volume = 1.0  # m^3
 total_volume = liquor_volume + wood_volume
@@ -117,7 +125,12 @@ def dxdt(x, t):
 
     # unpack variables
     cl, cw = concentrations(x)
-
+    
+    # Get the total moles of each component in the volume
+    M = numpy.zeros(len(components))
+    for i, mol in enumerate(cw[:, 0]):
+        M[i] = (numpy.sum(cw[i, :])/len(cw[i, :]))*wood_volume
+    
     # All transfers are calculated in moles/second
 
     # Diffusion between liquor and first wood compartment
@@ -138,7 +151,7 @@ def dxdt(x, t):
     diffusion[:, -1] = 0
 
     # reaction rates in wood
-    r = numpy.apply_along_axis(reaction_rates, 0, cw)
+    r = numpy.apply_along_axis(reaction_rates, 0, cw, M)
     # change in moles due to reaction
     reaction = S.dot(r)*wood_compartment_volume
 
