@@ -38,14 +38,11 @@ def reaction_rates(C, x, T):
     CA, CB, CC = C
     Nl, Nw = unflatx(x)
     # Get total moles
-    TM = numpy.zeros(len(Nw[:, 0]))
-    # Convert the mol amount to % mass
-    for i, mol in enumerate(Nw[:, 0]):
-        TM[i] = (numpy.sum(Nw[i, :])*componentsMM[i])/wood_mass
+    mass_frac = Nw.sum(axis=1)*componentsMM/wood_mass
     
-    if TM[2] >= phase_change_limit[0]:
+    if mass_frac[2] >= phase_change_limit[0]:
         kr2 = 0.02
-    elif TM[2] >= phase_change_limit[1]:
+    elif mass_frac[2] >= phase_change_limit[1]:
         kr2 = 0.02
     else:
         kr2 = 0.02
