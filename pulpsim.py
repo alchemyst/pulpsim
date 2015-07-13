@@ -86,11 +86,13 @@ def temp(t):
     return T
 
 
-def fick_constant(T):
+def diff_constant(T):
     """ gives diffusion constant in (m^2/s)
     """
     D = kd*(T**0.5)*numpy.exp((-Ea)/(R*T))
-    return D
+    # Film diffusion constant
+    K = (6*D*kl)/(6*D + L*kl)
+    return D, K
 
 components = ['A', 'B', 'C']
 # Molar mass
@@ -102,10 +104,9 @@ S = numpy.array([[-1, 1, 0],
 t_end = 100
 
 Ti = 273.15  # (Kelvin)
-R = 1
-Ea = 1
+R, L, Ea, kl = 1, 1, 1, 1
 phase_change_limit = numpy.array([0.5, 0.3])
-K = numpy.array([0.1, 0.1, 0])  # diffusion constant (mol/(m^2.s))
+#K = numpy.array([0.1, 0.1, 0])  # diffusion constant (mol/(m^2.s))
 A = 1.1  # contact area (m^2)
 # FIXME: K and D should be specified in a similar way
 kd = numpy.array([[0.0001], [0.0002], [0]])
@@ -132,7 +133,7 @@ x0 = flatx(Nliq0, Nwood0)
 def dxdt(x, t):
     # assert numpy.all(x>=0)
     T = temp(t)
-    D = fick_constant(T)
+    D, K = diff_constant(T)
 
     # unpack variables
     cl, cw = concentrations(x)
