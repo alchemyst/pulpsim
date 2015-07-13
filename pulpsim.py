@@ -85,6 +85,13 @@ def temp(t):
     T = Ti + t * 0.1
     return T
 
+
+def fick_constant(T):
+    """ gives diffusion constant in (m^2/s)
+    """
+    D = kd*(T**0.5)*numpy.exp((-Ea)/(R*T))
+    return D
+
 components = ['A', 'B', 'C']
 # Molar mass
 componentsMM = [1., 1., 1.]
@@ -95,11 +102,13 @@ S = numpy.array([[-1, 1, 0],
 t_end = 100
 
 Ti = 273.15  # (Kelvin)
+R = 1
+Ea = 1
 phase_change_limit = numpy.array([0.5, 0.3])
 K = numpy.array([0.1, 0.1, 0])  # diffusion constant (mol/(m^2.s))
 A = 1.1  # contact area (m^2)
 # FIXME: K and D should be specified in a similar way
-D = numpy.array([[0.01], [0.02], [0.]])  # Fick's law constants
+kd = numpy.array([[0.0001], [0.0002], [0]])
 kr1 = 0.01 # reaction constant (mol/(s.m^3))
 
 wood_mass = 1.0  # kg
@@ -123,6 +132,7 @@ x0 = flatx(Nliq0, Nwood0)
 def dxdt(x, t):
     # assert numpy.all(x>=0)
     T = temp(t)
+    D = fick_constant(T)
 
     # unpack variables
     cl, cw = concentrations(x)
