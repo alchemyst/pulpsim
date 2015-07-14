@@ -48,7 +48,7 @@ def reaction_rates(C, x, T):
     :return: reaction rates
     """
 
-    CA, CB, CC = C
+    CL, CC, CA, CS = C
     Nl, Nw = unflatx(x)
     # Get total moles
     mass_frac = Nw.sum(axis=1)*componentsMM/wood_mass
@@ -59,8 +59,8 @@ def reaction_rates(C, x, T):
         kr2 = 0.02
     else:
         kr2 = 0.02
-    return numpy.array([kr1*CA,
-                        kr2*CB])
+    return numpy.array([kr1*CL,
+                        kr2*CC])
 
 
 def flatx(liquor, wood):
@@ -98,25 +98,33 @@ def temp(t):
     T = Ti + t * 0.1
     return T
 
-names, values, units, descriptions = reader('parameters_gustafsson.csv')
+names, values, units, descriptions = reader('parameters.csv')
 
-[Ti, phase_limit_1, phase_limit_2, wood_mass, liquor_volume, wood_volume,
- A, Ncompartments, effalk, sulf, heattime, cooktime, liqwoodrat, cooktemp,
- ligcont, carbocont, actcont, A1, A2a, A2b, A3, Ea1, Ea2a, Ea2b, Ea3, c1,
- c2, c3, AlDA, AlDEa, porint, porinf, poralpha, visc1, visc2, visc3, visc4] = values
+[Andersson_model, Gustafsson_model, Ti, wood_mass, liquor_volume, wood_volume, A,
+ Ncompartments, effalk, sulfidity, heattime, cooktime, liqwoodrat, cooktemp, ligcont,
+ carbocont, actcont, wood_length, wood_width, phase_limit_1, phase_limit_2, A1, A2a,
+ A2b, A3, Ea1, Ea2a, Ea2b, Ea3, c1, c2, c3, AlkDA, AlkDEa, AlkDc1, AlkDc2, AlkDc3,
+ AlkDc4, AlkDc5, porint, porinf, poralpha, visc1, visc2, visc3, visc4, L1k2, L1alpha,
+ L1beta, L1Ea, L1f, L1A, L1c0, L2k2, L2alpha, L2beta, L2Ea, L2f, L2A, L2c0, L3k2,
+ L3alpha, L3beta, L3Ea, L3f, L3A, L3c0, C1k2, C1alpha, C1beta, C1Ea, C1f, C1A, C1c0,
+ C2k2, C2alpha, C2beta, C2Ea, C2f, C2A, C2c0, C3k2, C3alpha, C3beta, C3Ea, C3f, C3A,
+ C3c0, G1k2, G1alpha, G1beta, G1Ea, G1f, G1A, G1c0, G2k2, G2alpha, G2beta, G2Ea, G2f,
+ G2A, G2c0, G3k2, G3alpha, G3beta, G3Ea, G3f, G3A, G3c0, X1k2, X1alpha, X1beta, X1Ea,
+ X1f, X1A, X1c0, X2k2, X2alpha, X2beta, X2Ea, X2f, X2A, X2c0, X3k2, X3alpha, X3beta,
+ X3Ea, X3f, X3A, X3c0, AlkDAkd, AlkDAEa, kappa_c1, kappa_c2] = values
 
-components = ['A', 'B', 'C']
+components = ['Lignin', 'Carbohydrate', 'Alkali', 'Sulfur']
 # Molar mass
-componentsMM = [1., 1., 1.]
+componentsMM = [1., 1., 1., 1.]
 Ncomponents = len(components)
 # stoicheometric matrix, reagents negative, products positive
-S = numpy.array([[-1, 1, 0],
-                 [0, -1, 1]]).T
+S = numpy.array([[-1, 1, 0, 0],
+                 [0, -1, 1, 0]]).T
 t_end = 100
 
-K = numpy.array([0.1, 0.1, 0])  # diffusion constant (mol/(m^2.s))
+K = numpy.array([0.1, 0.1, 0, 0])  # diffusion constant (mol/(m^2.s))
 # FIXME: K and D should be specified in a similar way
-D = numpy.array([[0.01], [0.02], [0.]])  # Fick's law constants
+D = numpy.array([[0.01], [0.02], [0.], [0.]])  # Fick's law constants
 kr1 = 0.01 # reaction constant (mol/(s.m^3))
 
 total_volume = liquor_volume + wood_volume
@@ -125,7 +133,7 @@ dz = 1./Ncompartments
 wood_compartment_volume = wood_volume/Ncompartments
 
 # Initial conditions
-Nliq0 = numpy.array([1., 0., 0.])
+Nliq0 = numpy.array([1., 0., 0., 0.])
          
 Nwood0 = numpy.zeros((Ncomponents, Ncompartments))
 
