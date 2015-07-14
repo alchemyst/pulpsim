@@ -6,6 +6,7 @@ from __future__ import print_function
 import numpy
 import scipy.integrate
 import matplotlib.pyplot as plt
+import csv
 
 # Simulate one liquor compartment and N wood compartments
 # there are Nc components
@@ -28,6 +29,18 @@ import matplotlib.pyplot as plt
 # 1 B -> 1 C
 # r2 = kr2*Cb
 # dNdt = S*r*V
+
+
+def reader(filename):
+    """read csv file"""
+    with open(filename) as f:
+        reader = csv.reader(f)
+        # First row is headings
+        reader.next()
+        names, valuestrings, units, descriptions = zip(*list(reader))
+    values = [float(s) for s in valuestrings]
+    return names, values, units, descriptions
+
 
 def reaction_rates(C, x, T):
     """ Calculate reaction rates for a column of component concentrations
@@ -85,11 +98,18 @@ def temp(t):
     T = Ti + t * 0.1
     return T
 
+names, values, units, descriptions = reader('parameters_gustafsson.csv')
+
+[effalk, sulf, heattime, cooktime, liqwoodrat, cooktemp,
+ ligcont, carbocont, actcont, A1, A2a, A2b, A3, Ea1, Ea2a,
+ Ea2b, Ea3, c1, c2, c3, AlDA, AlDEa, porint, porinf, poralpha,
+ visc1, visc2, visc3, visc4] = values
+
 components = ['A', 'B', 'C']
 # Molar mass
 componentsMM = [1., 1., 1.]
 Ncomponents = len(components)
- # stoicheometric matrix, reagents negative, products positive
+# stoicheometric matrix, reagents negative, products positive
 S = numpy.array([[-1, 1, 0],
                  [0, -1, 1]]).T
 t_end = 100
@@ -159,6 +179,7 @@ def dxdt(x, t):
     dNwooddt[:, 0] += transfer_rate
 
     return flatx(dNliquordt, dNwooddt)
+
 
 def totalmass(x):
     return sum(x)
