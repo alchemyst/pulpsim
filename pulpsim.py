@@ -92,6 +92,7 @@ def diff_constant(T):
     D = kd*(T**0.5)*numpy.exp((-Ea)/(R*T))
     # Film diffusion constant
     K = (6*D*kl)/(6*D + L*kl)
+    K.resize((3,))
     return D, K
 
 components = ['A', 'B', 'C']
