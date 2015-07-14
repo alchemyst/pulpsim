@@ -53,9 +53,9 @@ def reaction_rates(C, x, T):
     # Get total moles
     mass_frac = Nw.sum(axis=1)*componentsMM/wood_mass
     
-    if mass_frac[2] >= phase_change_limit[0]:
+    if mass_frac[2] >= phase_limit_1:
         kr2 = 0.02
-    elif mass_frac[2] >= phase_change_limit[1]:
+    elif mass_frac[2] >= phase_limit_2:
         kr2 = 0.02
     else:
         kr2 = 0.02
@@ -100,10 +100,10 @@ def temp(t):
 
 names, values, units, descriptions = reader('parameters_gustafsson.csv')
 
-[effalk, sulf, heattime, cooktime, liqwoodrat, cooktemp,
- ligcont, carbocont, actcont, A1, A2a, A2b, A3, Ea1, Ea2a,
- Ea2b, Ea3, c1, c2, c3, AlDA, AlDEa, porint, porinf, poralpha,
- visc1, visc2, visc3, visc4] = values
+[Ti, phase_limit_1, phase_limit_2, wood_mass, liquor_volume, wood_volume,
+ A, Ncompartments, effalk, sulf, heattime, cooktime, liqwoodrat, cooktemp,
+ ligcont, carbocont, actcont, A1, A2a, A2b, A3, Ea1, Ea2a, Ea2b, Ea3, c1,
+ c2, c3, AlDA, AlDEa, porint, porinf, poralpha, visc1, visc2, visc3, visc4] = values
 
 components = ['A', 'B', 'C']
 # Molar mass
@@ -114,23 +114,15 @@ S = numpy.array([[-1, 1, 0],
                  [0, -1, 1]]).T
 t_end = 100
 
-Ti = 273.15  # (Kelvin)
-phase_change_limit = numpy.array([0.5, 0.3])
 K = numpy.array([0.1, 0.1, 0])  # diffusion constant (mol/(m^2.s))
-A = 1.1  # contact area (m^2)
 # FIXME: K and D should be specified in a similar way
 D = numpy.array([[0.01], [0.02], [0.]])  # Fick's law constants
 kr1 = 0.01 # reaction constant (mol/(s.m^3))
 
-wood_mass = 1.0  # kg
-liquor_volume = 1.0  # m^3
-wood_volume = 1.0  # m^3
 total_volume = liquor_volume + wood_volume
 
-Ncompartments = 30
 dz = 1./Ncompartments
 wood_compartment_volume = wood_volume/Ncompartments
-
 
 # Initial conditions
 Nliq0 = numpy.array([1., 0., 0.])
