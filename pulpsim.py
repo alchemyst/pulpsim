@@ -35,7 +35,7 @@ def reaction_rates(C, x, T):
     :return: reaction rates
     """
 
-    CA, CB, CC = C
+    CL, CC, CA, CS = C
     Nl, Nw = unflatx(x)
     # Get total moles
     mass_frac = Nw.sum(axis=1)*componentsMM/wood_mass
@@ -46,8 +46,8 @@ def reaction_rates(C, x, T):
         kr2 = 0.02
     else:
         kr2 = 0.02
-    return numpy.array([kr1*CA,
-                        kr2*CB])
+    return numpy.array([kr1*CL,
+                        kr2*CC])
 
 
 def flatx(liquor, wood):
@@ -92,16 +92,16 @@ def diff_constant(T):
     D = kd*(T**0.5)*numpy.exp((-Ea)/(R*T))
     # Film diffusion constant
     K = (6*D*kl)/(6*D + L*kl)
-    K.resize((3,))
+    K.resize((Ncomponents,))
     return D, K
 
-components = ['A', 'B', 'C']
+components = ['Lignin', 'Carbohydrate', 'Alkali', 'Sulfur']
 # Molar mass
-componentsMM = [1., 1., 1.]
+componentsMM = [1., 1., 1., 1.]
 Ncomponents = len(components)
  # stoicheometric matrix, reagents negative, products positive
-S = numpy.array([[-1, 1, 0],
-                 [0, -1, 1]]).T
+S = numpy.array([[-1, 1, 0, 0],
+                 [0, -1, 1, 0]]).T
 t_end = 100
 
 Ti = 273.15  # (Kelvin)
@@ -110,7 +110,7 @@ phase_change_limit = numpy.array([0.5, 0.3])
 #K = numpy.array([0.1, 0.1, 0])  # diffusion constant (mol/(m^2.s))
 A = 1.1  # contact area (m^2)
 # FIXME: K and D should be specified in a similar way
-kd = numpy.array([[0.0001], [0.0002], [0]])
+kd = numpy.array([[0.0001], [0.0002], [0], [0]])
 kr1 = 0.01 # reaction constant (mol/(s.m^3))
 
 wood_mass = 1.0  # kg
@@ -124,7 +124,7 @@ wood_compartment_volume = wood_volume/Ncompartments
 
 
 # Initial conditions
-Nliq0 = numpy.array([1., 0., 0.])
+Nliq0 = numpy.array([1., 0., 0., 0.])
          
 Nwood0 = numpy.zeros((Ncomponents, Ncompartments))
 
