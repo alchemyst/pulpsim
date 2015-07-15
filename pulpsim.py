@@ -7,6 +7,8 @@ import numpy
 import scipy.integrate
 import matplotlib.pyplot as plt
 import csv
+import ConfigParser
+import os
 
 # Simulate one liquor compartment and N wood compartments
 # there are Nc components
@@ -55,7 +57,7 @@ def reaction_rates(C, x, T):
     Nl, Nw = unflatx(x)
     # Get total moles
     mass_frac = Nw.sum(axis=1)*componentsMM/parameters['wood_mass']
-    
+
     if mass_frac[2] >= parameters['phase_limit_1']:
         kr2 = 0.02
     elif mass_frac[2] >= parameters['phase_limit_2']:
@@ -101,7 +103,22 @@ def temp(t):
     T = parameters['Ti'] + t * 0.1
     return T
 
-parameters = reader('parameters.csv')
+# Read configuration file
+config = ConfigParser.ConfigParser()
+configfile = 'config.cfg'
+
+if os.path.exists(configfile):
+    config.read('config.cfg')
+else:
+    message = ("Cannot find config file {0}. "
+               "Try copying sample_config.cfg to {0}.").format(configfile)
+    raise EnvironmentError(message)
+
+datadir = os.path.expanduser(config.get('paths', 'datadir'))
+parameter_filename = os.path.join(datadir, 'parameters.csv')
+
+# Read parameter file
+parameters = reader(parameter_filename)
 
 components = ['Lignin', 'Carbohydrate', 'Alkali', 'Sulfur']
 # Molar mass
@@ -124,7 +141,7 @@ wood_compartment_volume = parameters['wood_volume']/parameters['Ncompartments']
 
 # Initial conditions
 Nliq0 = numpy.array([1., 0., 0., 0.])
-         
+
 Nwood0 = numpy.zeros((Ncomponents, parameters['Ncompartments']))
 
 x0 = flatx(Nliq0, Nwood0)
@@ -136,7 +153,7 @@ def dxdt(x, t):
 
     # unpack variables
     cl, cw = concentrations(x)
-    
+
     # All transfers are calculated in moles/second
 
     # Diffusion between liquor and first wood compartment
