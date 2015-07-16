@@ -67,8 +67,8 @@ def reaction_rates(C, x, T):
         kr2 = 0.02
     else:
         kr2 = 0.02
-    return numpy.array([kr1*CL,
-                        kr2*CC])
+    return numpy.array([kr1*CL*CA,
+                        kr2*CC*CA])
 
 
 def flatx(liquor, wood):
@@ -128,13 +128,13 @@ components = ['Lignin', 'Carbohydrate', 'Alkali', 'Sulfur']
 componentsMM = [1., 1., 1., 1.]
 Ncomponents = len(components)
 # stoicheometric matrix, reagents negative, products positive
-S = numpy.array([[-1, 1, 0, 0],
-                 [0, -1, 1, 0]]).T
+S = numpy.array([[-1, 0, 0, 0],
+                 [0, -1, 0, 0]]).T
 t_end = 100
 
-K = numpy.array([0.1, 0.1, 0, 0])  # diffusion constant (mol/(m^2.s))
+K = numpy.array([0., 0., 0.1, 0])  # diffusion constant (mol/(m^2.s))
 # FIXME: K and D should be specified in a similar way
-D = numpy.array([[0.01], [0.02], [0.], [0.]])  # Fick's law constants
+D = numpy.array([[0.], [0.], [0.01], [0.]])  # Fick's law constants
 kr1 = 0.01 # reaction constant (mol/(s.m^3))
 
 total_volume = parameters['liquor_volume'] + parameters['wood_volume']
@@ -143,9 +143,12 @@ dz = 1./parameters['Ncompartments']
 wood_compartment_volume = parameters['wood_volume']/parameters['Ncompartments']
 
 # Initial conditions
-Nliq0 = numpy.array([1., 0., 0., 0.])
+Nliq0 = numpy.array([0., 0., 1., 0.])
 
 Nwood0 = numpy.zeros((Ncomponents, parameters['Ncompartments']))
+# Lignin & Carbo content
+Nwood0[0, :] = 0.01
+Nwood0[1, :] = 0.01
 
 x0 = flatx(Nliq0, Nwood0)
 
