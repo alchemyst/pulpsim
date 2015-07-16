@@ -9,7 +9,10 @@ import matplotlib.pyplot as plt
 import csv
 import ConfigParser
 import os
+import time
 
+# Time at start
+start_time = time.time()
 # Simulate one liquor compartment and N wood compartments
 # there are Nc components
 # +----------+----------------------------+
@@ -202,6 +205,8 @@ xs, info = scipy.integrate.odeint(dxdt, x0, t, full_output=True)
 # TODO: This is probably inefficient
 cl, cw = map(numpy.array, zip(*map(concentrations, xs)))
 
+# Time at end of run
+print ('Simulation run time: ', time.time() - start_time, 'sec')
 # Concentrations
 ax = None
 cm = plt.get_cmap('cubehelix')
