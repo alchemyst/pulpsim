@@ -113,6 +113,12 @@ def temp(t):
     T = parameters['Ti'] + t * 0.1
     return T
 
+
+def gustaf_exp(c1, c2, T):
+    """ Calculate the Gustafsson exponential constants for the rates"""
+    k = numpy.exp(c1-(c2/T))
+    return k
+
 # Read configuration file
 config = ConfigParser.ConfigParser()
 configfile = 'config.cfg'
