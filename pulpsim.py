@@ -62,13 +62,20 @@ def reaction_rates(C, x, T):
     mass_frac = Nw.sum(axis=1)*componentsMM/parameters['wood_mass']
 
     if mass_frac[2] >= parameters['phase_limit_1']:
-        kr2 = 0.02
+        kr1 = g*0.01 + y*0.01
+        kr2 = g*0.02 + y*0.02
+        kr3 = 0.01
     elif mass_frac[2] >= parameters['phase_limit_2']:
-        kr2 = 0.02
+        kr1 = g*0.01 + y*0.01
+        kr2 = g*0.02 + y*0.02
+        kr3 = 0.01
     else:
-        kr2 = 0.02
+        kr1 = g*0.01 + y*0.01
+        kr2 = g*0.02 + y*0.02
+        kr3 = 0.01
     return numpy.array([kr1*CL*CA,
-                        kr2*CC*CA])
+                        kr2*CC*CA,
+                        kr3*CC*CL])
 
 
 def flatx(liquor, wood):
@@ -123,19 +130,29 @@ parameter_filename = os.path.join(datadir, 'parameters.csv')
 # Read parameter file
 parameters = reader(parameter_filename)
 
+# Check what model is used
+if parameters['Andersson_model'] == 1:
+    y = 1
+    g = 0
+elif parameters['Gustafsson_model'] == 1:
+    y = 0
+    g = 1
+else:
+    print("No model was specified")
+
 components = ['Lignin', 'Carbohydrate', 'Alkali', 'Sulfur']
 # Molar mass
 componentsMM = [1., 1., 1., 1.]
 Ncomponents = len(components)
 # stoicheometric matrix, reagents negative, products positive
 S = numpy.array([[-1, 0, 0, 0],
-                 [0, -1, 0, 0]]).T
+                 [0, -1, 0, 0],
+                 [0, 0, -1, 0]]).T
 t_end = 100
 
-K = numpy.array([0., 0., 0.1, 0])  # diffusion constant (mol/(m^2.s))
+K = numpy.array([0., 0., 0.1, 0.2])  # diffusion constant (mol/(m^2.s))
 # FIXME: K and D should be specified in a similar way
-D = numpy.array([[0.], [0.], [0.01], [0.]])  # Fick's law constants
-kr1 = 0.01 # reaction constant (mol/(s.m^3))
+D = numpy.array([[0.], [0.], [0.01], [0.02]])  # Fick's law constants
 
 total_volume = parameters['liquor_volume'] + parameters['wood_volume']
 
@@ -143,7 +160,7 @@ dz = 1./parameters['Ncompartments']
 wood_compartment_volume = parameters['wood_volume']/parameters['Ncompartments']
 
 # Initial conditions
-Nliq0 = numpy.array([0., 0., 1., 0.])
+Nliq0 = numpy.array([0., 0., 1., 1.])
 
 Nwood0 = numpy.zeros((Ncomponents, parameters['Ncompartments']))
 # Lignin & Carbo content
