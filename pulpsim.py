@@ -61,11 +61,11 @@ def reaction_rates(C, x, T):
     # Get total moles
     mass_frac = Nw.sum(axis=1)*componentsMM/parameters['wood_mass']
 
-    if mass_frac[2] >= parameters['phase_limit_1']:
+    if mass_frac[0] >= parameters['phase_limit_1']:
         kr1 = g*0.01 + y*0.01
         kr2 = g*0.02 + y*0.02
         kr3 = 0.01
-    elif mass_frac[2] >= parameters['phase_limit_2']:
+    elif mass_frac[0] >= parameters['phase_limit_2']:
         kr1 = g*0.01 + y*0.01
         kr2 = g*0.02 + y*0.02
         kr3 = 0.01
@@ -119,6 +119,17 @@ def gustaf_exp(c1, c2, T):
     k = numpy.exp(c1-(c2/T))
     return k
 
+
+def fick_constant(T, cw):
+    """ Calculate Fick's Diffusivity constants in (m^2/s)
+    """
+    CL, CC, CA, CS = cw
+    D = numpy.zeros((Ncomponents, 1))
+    # Diffusion constant for alkali and sulfide respectively
+    D[Ncomponents-2] = 0.02
+    D[Ncomponents-1] = 0.02
+    return D
+
 # Read configuration file
 config = ConfigParser.ConfigParser()
 configfile = 'config.cfg'
@@ -138,11 +149,9 @@ parameters = reader(parameter_filename)
 
 # Check what model is used
 if parameters['Andersson_model'] == 1:
-    y = 1
-    g = 0
+    y, g = 1, 0
 elif parameters['Gustafsson_model'] == 1:
-    y = 0
-    g = 1
+    y, g = 0, 1
 else:
     print("No model was specified")
 
@@ -178,11 +187,14 @@ x0 = flatx(Nliq0, Nwood0)
 
 def dxdt(x, t):
     # assert numpy.all(x>=0)
-    T = temp(t)
-
+    
     # unpack variables
     cl, cw = concentrations(x)
-
+    
+    # Update parameters
+    T = temp(t)
+    D = fick_constant(T, cw)
+    
     # All transfers are calculated in moles/second
 
     # Diffusion between liquor and first wood compartment
