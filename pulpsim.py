@@ -130,6 +130,15 @@ def fick_constant(T, cw):
     D[Ncomponents-1] = 0.02
     return D
 
+
+def mass_transfer_constant(T):
+    """ gives external mass transfer constant in (mol/(m^2.s))
+    """
+    k = numpy.zeros((Ncomponents,))
+    k[Ncomponents-2] = 0.1
+    k[Ncomponents-1] = 0.2
+    return k
+
 # Read configuration file
 config = ConfigParser.ConfigParser()
 configfile = 'config.cfg'
@@ -165,10 +174,6 @@ S = numpy.array([[-1, 0, 0, 0],
                  [0, 0, -1, 0]]).T
 t_end = 100
 
-K = numpy.array([0., 0., 0.1, 0.2])  # diffusion constant (mol/(m^2.s))
-# FIXME: K and D should be specified in a similar way
-D = numpy.array([[0.], [0.], [0.01], [0.02]])  # Fick's law constants
-
 total_volume = parameters['liquor_volume'] + parameters['wood_volume']
 
 dz = 1./parameters['Ncompartments']
@@ -194,6 +199,7 @@ def dxdt(x, t):
     # Update parameters
     T = temp(t)
     D = fick_constant(T, cw)
+    K = mass_transfer_constant(T)
     
     # All transfers are calculated in moles/second
 
