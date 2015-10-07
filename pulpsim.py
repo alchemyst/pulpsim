@@ -60,6 +60,7 @@ def reaction_rates(C, x, T):
     Nl, Nw = unflatx(x)
     # Get total moles
     mass_frac = Nw.sum(axis=1)*componentsMM/parameters['wood_mass']
+    kappa_store.append(kappa(mass_frac[0], mass_frac[1]))
 
     if mass_frac[0] >= parameters['phase_limit_1']:
         kr1 = g*0.01 + y*0.01
@@ -113,7 +114,7 @@ def temp(t):
         T = parameters['Ti'] + ((parameters['Tmax']-parameters['Ti'])/(parameters['toTmax']*60))*t
     else:
         T = parameters['Tmax']
-    tempa.append(T)
+    temp_store.append(T)
     return T
 
 
@@ -141,6 +142,11 @@ def mass_transfer_constant(T):
     k[Ncomponents-2] = 0.1
     k[Ncomponents-1] = 0.2
     return k
+
+
+def kappa(L, C):
+    knum = 500*((L*100)/(L*100 + C*100)) + 5
+    return knum
 
 # Read configuration file
 config = ConfigParser.ConfigParser()
@@ -191,7 +197,8 @@ Nwood0[0, :] = 0.01
 Nwood0[1, :] = 0.01
 
 x0 = flatx(Nliq0, Nwood0)
-tempa = [parameters['Ti']]
+temp_store = []
+kappa_store = []
 
 
 def dxdt(x, t):
@@ -274,6 +281,9 @@ plt.subplots_adjust(hspace=0)
 plt.show()
 
 plt.figure(2)
-plt.plot(range(len(tempa)), tempa)
+plt.plot(range(len(temp_store)), temp_store)
 plt.show()
 
+plt.figure(3)
+plt.plot(range(len(kappa_store)), kappa_store)
+plt.show()
