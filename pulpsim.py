@@ -109,8 +109,11 @@ def concentrations(x):
 def temp(t):
     """ Temperature function
     """
-
-    T = parameters['Ti'] + t * 0.1
+    if t < parameters['toTmax']*60:
+        T = parameters['Ti'] + ((parameters['Tmax']-parameters['Ti'])/(parameters['toTmax']*60))*t
+    else:
+        T = parameters['Tmax']
+    tempa.append(T)
     return T
 
 
@@ -188,6 +191,7 @@ Nwood0[0, :] = 0.01
 Nwood0[1, :] = 0.01
 
 x0 = flatx(Nliq0, Nwood0)
+tempa = [parameters['Ti']]
 
 
 def dxdt(x, t):
@@ -268,3 +272,8 @@ plt.ylabel('Total moles')
 plt.ylim(ymin=0)
 plt.subplots_adjust(hspace=0)
 plt.show()
+
+plt.figure(2)
+plt.plot(range(len(tempa)), tempa)
+plt.show()
+
