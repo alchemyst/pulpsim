@@ -12,7 +12,7 @@ import os
 import time
 
 # Time at start 
-start
+start_time = time.time()
 # Simulate one liquor compartment and N wood compartments
 # there are Nc components
 # +----------+----------------------------+
