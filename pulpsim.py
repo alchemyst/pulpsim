@@ -11,7 +11,7 @@ import ConfigParser
 import os
 import time
 
-# Time at start
+# Time at start !
 start
 # Simulate one liquor compartment and N wood compartments
 # there are Nc components
