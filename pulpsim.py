@@ -11,6 +11,8 @@ import ConfigParser
 import os
 import time
 
+# numpy.seterr(all='raise')
+
 # Time at start
 start_time = time.time()
 # Simulate one liquor compartment and N wood compartments
@@ -63,7 +65,7 @@ def reaction_rates(C, x, T):
     kappa_store.append(kappa(mass_frac[0], mass_frac[1]))
 
     if mass_frac[0] >= parameters['phase_limit_1']:
-        kr1 = g*(parameters['A1']*numpy.exp(parameters['Ea1']/T)*numpy.sqrt(T)*mass_frac[0])
+        kr1 = g*(parameters['A1']*numpy.exp(-parameters['Ea1']/T)*numpy.sqrt(T)*mass_frac[0])
         kr2 = parameters['c1']*kr1*(CA**0.11)
         kr3 = (0.00478*kr1 - 0.0181*kr2)
     elif mass_frac[0] >= parameters['phase_limit_2']:
