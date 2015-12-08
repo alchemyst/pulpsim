@@ -9,7 +9,10 @@ import matplotlib.pyplot as plt
 import csv
 import ConfigParser
 import os
+import time
 
+# Time at start
+start_time = time.time()
 # Simulate one liquor compartment and N wood compartments
 # there are Nc components
 # +----------+----------------------------+
@@ -57,15 +60,23 @@ def reaction_rates(C, x, T):
     Nl, Nw = unflatx(x)
     # Get total moles
     mass_frac = Nw.sum(axis=1)*componentsMM/parameters['wood_mass']
+    kappa_store.append(kappa(mass_frac[0], mass_frac[1]))
 
-    if mass_frac[2] >= parameters['phase_limit_1']:
-        kr2 = 0.02
-    elif mass_frac[2] >= parameters['phase_limit_2']:
-        kr2 = 0.02
+    if mass_frac[0] >= parameters['phase_limit_1']:
+        kr1 = g*(parameters['A1']*numpy.exp(parameters['Ea1']/T)*numpy.sqrt(T)*mass_frac[0])
+        kr2 = parameters['c1']*kr1*(CA**0.11)
+        kr3 = (0.00478*kr1 - 0.0181*kr2)
+    elif mass_frac[0] >= parameters['phase_limit_2']:
+        kr1 = g*0.01 + y*0.01
+        kr2 = g*0.02 + y*0.02
+        kr3 = 0.01
     else:
-        kr2 = 0.02
-    return numpy.array([kr1*CL,
-                        kr2*CC])
+        kr1 = g*0.01 + y*0.01
+        kr2 = g*0.02 + y*0.02
+        kr3 = 0.01
+    return numpy.array([kr1*CL*CA,
+                        kr2*CC*CA,
+                        kr3*CC*CL])
 
 
 def flatx(liquor, wood):
@@ -99,9 +110,43 @@ def concentrations(x):
 def temp(t):
     """ Temperature function
     """
-
-    T = parameters['Ti'] + t * 0.1
+    if t < parameters['toTmax']*60:
+        T = parameters['Ti'] + ((parameters['Tmax']-parameters['Ti'])/(parameters['toTmax']*60))*t
+    else:
+        T = parameters['Tmax']
+    temp_store.append(T)
     return T
+
+
+def gustaf_exp(c1, c2, T):
+    """ Calculate the Gustafsson exponential constants for the rates"""
+    k = numpy.exp(c1-(c2/T))
+    return k
+
+
+def fick_constant(T, cw):
+    """ Calculate Fick's Diffusivity constants in (m^2/s)
+    """
+    CL, CC, CA, CS = cw
+    D = numpy.zeros((Ncomponents, 1))
+    # Diffusion constant for alkali and sulfide respectively
+    D[Ncomponents-2] = 0.02
+    D[Ncomponents-1] = 0.02
+    return D
+
+
+def mass_transfer_constant(T):
+    """ gives external mass transfer constant in (mol/(m^2.s))
+    """
+    k = numpy.zeros((Ncomponents,))
+    k[Ncomponents-2] = 0.1
+    k[Ncomponents-1] = 0.2
+    return k
+
+
+def kappa(L, C):
+    knum = 500*((L*100)/(L*100 + C*100)) + 5
+    return knum
 
 # Read configuration file
 config = ConfigParser.ConfigParser()
@@ -120,19 +165,23 @@ parameter_filename = os.path.join(datadir, 'parameters.csv')
 # Read parameter file
 parameters = reader(parameter_filename)
 
+# Check what model is used
+if parameters['Andersson_model'] == 1:
+    y, g = 1, 0
+elif parameters['Gustafsson_model'] == 1:
+    y, g = 0, 1
+else:
+    print("No model was specified")
+
 components = ['Lignin', 'Carbohydrate', 'Alkali', 'Sulfur']
 # Molar mass
 componentsMM = [1., 1., 1., 1.]
 Ncomponents = len(components)
 # stoicheometric matrix, reagents negative, products positive
-S = numpy.array([[-1, 1, 0, 0],
-                 [0, -1, 1, 0]]).T
+S = numpy.array([[-1, 0, 0, 0],
+                 [0, -1, 0, 0],
+                 [0, 0, -1, 0]]).T
 t_end = 100
-
-K = numpy.array([0.1, 0.1, 0, 0])  # diffusion constant (mol/(m^2.s))
-# FIXME: K and D should be specified in a similar way
-D = numpy.array([[0.01], [0.02], [0.], [0.]])  # Fick's law constants
-kr1 = 0.01 # reaction constant (mol/(s.m^3))
 
 total_volume = parameters['liquor_volume'] + parameters['wood_volume']
 
@@ -140,20 +189,29 @@ dz = 1./parameters['Ncompartments']
 wood_compartment_volume = parameters['wood_volume']/parameters['Ncompartments']
 
 # Initial conditions
-Nliq0 = numpy.array([1., 0., 0., 0.])
+Nliq0 = numpy.array([0., 0., 1., 1.])
 
 Nwood0 = numpy.zeros((Ncomponents, parameters['Ncompartments']))
+# Lignin & Carbo content
+Nwood0[0, :] = 0.01
+Nwood0[1, :] = 0.01
 
 x0 = flatx(Nliq0, Nwood0)
+temp_store = []
+kappa_store = []
 
 
 def dxdt(x, t):
     # assert numpy.all(x>=0)
-    T = temp(t)
-
+    
     # unpack variables
     cl, cw = concentrations(x)
-
+    
+    # Update parameters
+    T = temp(t)
+    D = fick_constant(T, cw)
+    K = mass_transfer_constant(T)
+    
     # All transfers are calculated in moles/second
 
     # Diffusion between liquor and first wood compartment
@@ -202,6 +260,8 @@ xs, info = scipy.integrate.odeint(dxdt, x0, t, full_output=True)
 # TODO: This is probably inefficient
 cl, cw = map(numpy.array, zip(*map(concentrations, xs)))
 
+# Time at end of run
+print ('Simulation run time: ', time.time() - start_time, 'sec')
 # Concentrations
 ax = None
 cm = plt.get_cmap('cubehelix')
@@ -218,4 +278,12 @@ plt.plot(t, [totalmass(x) for x in xs])
 plt.ylabel('Total moles')
 plt.ylim(ymin=0)
 plt.subplots_adjust(hspace=0)
+plt.show()
+
+plt.figure(2)
+plt.plot(range(len(temp_store)), temp_store)
+plt.show()
+
+plt.figure(3)
+plt.plot(range(len(kappa_store)), kappa_store)
 plt.show()
