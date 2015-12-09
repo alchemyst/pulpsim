@@ -62,7 +62,6 @@ def reaction_rates(C, x, T):
     Nl, Nw = unflatx(x)
     # Get total moles
     mass_frac = Nw.sum(axis=1)*componentsMM/parameters['wood_mass']
-    kappa_store.append(kappa(mass_frac[0], mass_frac[1]))
 
     if mass_frac[0] >= parameters['phase_limit_1']:
         kr1 = g*(parameters['A1']*numpy.exp(-parameters['Ea1']/T)*numpy.sqrt(T)*mass_frac[0])
@@ -116,7 +115,6 @@ def temp(t):
         T = parameters['Ti'] + ((parameters['Tmax']-parameters['Ti'])/(parameters['toTmax']*60))*t
     else:
         T = parameters['Tmax']
-    temp_store.append(T)
     return T
 
 
@@ -199,9 +197,6 @@ Nwood0[0, :] = 0.01
 Nwood0[1, :] = 0.01
 
 x0 = flatx(Nliq0, Nwood0)
-temp_store = []
-kappa_store = []
-
 
 def dxdt(x, t):
     # assert numpy.all(x>=0)
@@ -251,7 +246,7 @@ def dxdt(x, t):
 def totalmass(x):
     return sum(x)
 
-t = numpy.linspace(0, t_end)
+t = numpy.linspace(0, t_end, parameters['Nsteps'])
 z = numpy.linspace(0, 1, parameters['Ncompartments'])
 zl = numpy.array([-dz*2, 0])  # z-coords of liquor
 Nt = len(t)
@@ -282,10 +277,11 @@ plt.ylim(ymin=0)
 plt.subplots_adjust(hspace=0)
 plt.show()
 
-plt.figure(2)
-plt.plot(range(len(temp_store)), temp_store)
-plt.show()
-
-plt.figure(3)
-plt.plot(range(len(kappa_store)), kappa_store)
+row = numpy.arange(numpy.int(parameters['Nsteps']))
+col_lig = numpy.arange(numpy.int(parameters['Ncompartments']))
+col_carbo = numpy.arange(numpy.int(parameters['Ncompartments']))+numpy.int(parameters['Ncompartments'])
+l = xs[row[:, None], col_lig]
+c = xs[row[:, None], col_carbo]
+g = kappa(l.sum(axis=1), c.sum(axis=1))
+plt.plot(t, g)
 plt.show()
