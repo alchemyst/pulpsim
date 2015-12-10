@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+#please make a change
+
 from __future__ import division
 from __future__ import print_function
 
@@ -11,7 +13,7 @@ import ConfigParser
 import os
 import time
 
-# Time at start
+# Time at start 
 start_time = time.time()
 # Simulate one liquor compartment and N wood compartments
 # there are Nc components
@@ -34,6 +36,7 @@ start_time = time.time()
 # 1 B -> 1 C
 # r2 = kr2*Cb
 # dNdt = S*r*V
+# changed by marco
 
 
 def reader(filename):
@@ -63,20 +66,39 @@ def reaction_rates(C, x, T):
     kappa_store.append(kappa(mass_frac[0], mass_frac[1]))
 
     if mass_frac[0] >= parameters['phase_limit_1']:
-        kr1 = g*(parameters['A1']*numpy.exp(parameters['Ea1']/T)*numpy.sqrt(T)*mass_frac[0])
-        kr2 = parameters['c1']*kr1*(CA**0.11)
-        kr3 = (0.00478*kr1 - 0.0181*kr2)
+        kr1 = g*(36.2*T**0.5)*numpy.exp(-4807.69/T) + y*0.01
+        kr2 = g*2.53 + y*0.02
+        kr3 = -4.78e-3
+        kr4 = 1.81e-2
+        
+        r1 = kr1*CL
+        r2 = kr1*kr2*CL*CA**0.11   
+        r3 = (kr3*r1 + kr4*r2)*parameters['density']/parameters['porinf']
+        
     elif mass_frac[0] >= parameters['phase_limit_2']:
-        kr1 = g*0.01 + y*0.01
-        kr2 = g*0.02 + y*0.02
-        kr3 = 0.01
+        kr11 = g*numpy.exp(35.19-17200/T) + y*0.01
+        kr12 = g*numpy.exp(29.23-14400/T) + y*0.01
+        kr2 = g*0.47 + y*0.02
+        kr3 = -4.78e-3
+        kr4 = 1.81e-2
+        
+        r1 = kr11*CA*CL + kr12*CL*(CA**0.5)*(CS**0.4)
+        r2 = kr2*r1
+        r3 = (kr3*r1 + kr4*r2)*parameters['density']/parameters['porinf']
+        
     else:
-        kr1 = g*0.01 + y*0.01
-        kr2 = g*0.02 + y*0.02
-        kr3 = 0.01
-    return numpy.array([kr1*CL*CA,
-                        kr2*CC*CA,
-                        kr3*CC*CL])
+        kr1 = g*numpy.exp(19.64-10804/T) + y*0.01
+        kr2 = g*2.19 + y*0.02
+        kr3 = -4.78e-3
+        kr4 = 1.81e-2
+        
+        r1 = kr1*(CA**0.7)*CL
+        r2 = kr2*r1
+        r3 = (kr3*r1 + kr4*r2)*parameters['density']/parameters['porinf']
+        
+    return numpy.array([r1,
+                        r2,
+                        r3])
 
 
 def flatx(liquor, wood):
@@ -131,7 +153,7 @@ def fick_constant(T, cw):
     D = numpy.zeros((Ncomponents, 1))
     # Diffusion constant for alkali and sulfide respectively
     D[Ncomponents-2] = 0.02
-    D[Ncomponents-1] = 0.02
+
     return D
 
 
@@ -140,7 +162,7 @@ def mass_transfer_constant(T):
     """
     k = numpy.zeros((Ncomponents,))
     k[Ncomponents-2] = 0.1
-    k[Ncomponents-1] = 0.2
+
     return k
 
 
@@ -205,7 +227,7 @@ def dxdt(x, t):
     # assert numpy.all(x>=0)
     
     # unpack variables
-    cl, cw = concentrations(x)
+    cl, cw = unflatx(x)
     
     # Update parameters
     T = temp(t)
@@ -258,7 +280,7 @@ xs, info = scipy.integrate.odeint(dxdt, x0, t, full_output=True)
 
 # Work out concentrations
 # TODO: This is probably inefficient
-cl, cw = map(numpy.array, zip(*map(concentrations, xs)))
+#cl, cw = map(numpy.array, zip(*map(concentrations, xs)))
 
 # Time at end of run
 print ('Simulation run time: ', time.time() - start_time, 'sec')
@@ -282,8 +304,10 @@ plt.show()
 
 plt.figure(2)
 plt.plot(range(len(temp_store)), temp_store)
+plt.title('Temperature')
 plt.show()
 
 plt.figure(3)
 plt.plot(range(len(kappa_store)), kappa_store)
+plt.title(r'$\kappa$', fontsize = 16)
 plt.show()
