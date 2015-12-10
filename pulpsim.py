@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+#please make a change
+
 from __future__ import division
 from __future__ import print_function
 
@@ -11,7 +13,7 @@ import ConfigParser
 import os
 import time
 
-# Time at start
+# Time at start 
 start_time = time.time()
 # Simulate one liquor compartment and N wood compartments
 # there are Nc components
@@ -34,6 +36,7 @@ start_time = time.time()
 # 1 B -> 1 C
 # r2 = kr2*Cb
 # dNdt = S*r*V
+# changed by marco
 
 
 def reader(filename):
